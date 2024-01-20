@@ -1,9 +1,9 @@
 package com.example.challengerecruitassignment
 
+import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.MenuItem
-import androidx.core.view.GravityCompat
 import com.example.challengerecruitassignment.databinding.ActivityRegisterTodoBinding
 
 class RegisterTodoActivity : AppCompatActivity() {
@@ -19,6 +19,13 @@ class RegisterTodoActivity : AppCompatActivity() {
         setSupportActionBar(binding.tbRegisterTodo)
         supportActionBar?.setDisplayShowTitleEnabled(false)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
+
+        binding.btnRegisterTodoRegister.setOnClickListener {
+            val newIntent = Intent()
+            newIntent.putExtra("todo", Todo(binding.etRegisterTodoTitle.text.toString(), binding.etRegisterTodoDescription.text.toString()))
+            setResult(RESULT_OK, newIntent)
+            finish()
+        }
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {

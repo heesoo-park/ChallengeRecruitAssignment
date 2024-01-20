@@ -1,8 +1,9 @@
-package com.example.challengerecruitassignment
+package com.example.challengerecruitassignment.bookmark
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
+import com.example.challengerecruitassignment.Todo
 import com.example.challengerecruitassignment.databinding.BookmarkItemBinding
 
 class BookmarkAdapter(private val dataList: ArrayList<Todo>) :
