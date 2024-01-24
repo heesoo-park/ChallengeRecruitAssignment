@@ -2,4 +2,7 @@
     <string name="app_name">ChallengeRecruitAssignment</string>
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
+
+    <string name="main_tab_todo">Todo</string>
+    <string name="main_tab_bookmark">Bookmark</string>
 </resources>

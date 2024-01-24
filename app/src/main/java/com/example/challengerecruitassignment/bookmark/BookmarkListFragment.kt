@@ -6,10 +6,13 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.example.challengerecruitassignment.DataStore
 import com.example.challengerecruitassignment.databinding.FragmentBookmarkBinding
 
-class BookmarkFragment : Fragment() {
+class BookmarkListFragment : Fragment() {
+
+    companion object {
+        fun newInstance() = BookmarkListFragment()
+    }
 
     private var _binding: FragmentBookmarkBinding? = null
     private val binding get() = _binding
@@ -25,7 +28,7 @@ class BookmarkFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val adapter = BookmarkAdapter(DataStore.getTotalTodoList())
+        val adapter = BookmarkListAdapter()
         binding?.rvBookmark?.adapter = adapter
         binding?.rvBookmark?.layoutManager = LinearLayoutManager(context, LinearLayoutManager.VERTICAL,false)
     }

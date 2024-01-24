@@ -1,4 +1,4 @@
-package com.example.challengerecruitassignment
+package com.example.challengerecruitassignment.main
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -15,14 +15,15 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
 
-        val adapter = ViewPagerAdapter(this)
-        binding.viewPagerMain.adapter = adapter
+        initView()
+    }
 
-        TabLayoutMediator(binding.tabLayoutMain, binding.viewPagerMain) { tab, pos ->
-            when (pos) {
-                0 -> tab.text = "Todo"
-                1 -> tab.text = "Bookmark"
-            }
+    private fun initView() = with(binding) {
+        val adapter = ViewPagerAdapter(this@MainActivity)
+        viewPagerMain.adapter = adapter
+
+        TabLayoutMediator(tabLayoutMain, viewPagerMain) { tab, position ->
+            tab.setText(adapter.getTitle(position))
         }.attach()
     }
 }
