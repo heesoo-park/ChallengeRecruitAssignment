@@ -9,6 +9,7 @@ import android.view.View
 import androidx.core.widget.addTextChangedListener
 import com.example.challengerecruitassignment.TodoModel
 import com.example.challengerecruitassignment.databinding.ActivityManageTodoBinding
+import java.util.UUID
 
 class ManageTodoActivity : AppCompatActivity() {
 
@@ -91,6 +92,7 @@ class ManageTodoActivity : AppCompatActivity() {
             newIntent.putExtra(
                 EXTRA_TODO_MODEL,
                 TodoModel(
+                    UUID.randomUUID().toString(),
                     etRegisterTodoTitle.text.toString(),
                     etRegisterTodoDescription.text.toString()
                 )
@@ -105,6 +107,7 @@ class ManageTodoActivity : AppCompatActivity() {
             newIntent.putExtra(
                 EXTRA_TODO_MODEL,
                 TodoModel(
+                    UUID.randomUUID().toString(),
                     etRegisterTodoTitle.text.toString(),
                     etRegisterTodoDescription.text.toString()
                 )
@@ -120,6 +123,7 @@ class ManageTodoActivity : AppCompatActivity() {
             newIntent.putExtra(
                 EXTRA_TODO_MODEL,
                 TodoModel(
+                    todo?.id.toString(),
                     todo?.title.toString(),
                     todo?.description.toString()
                 )

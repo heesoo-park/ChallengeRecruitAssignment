@@ -55,7 +55,7 @@ class TodoListAdapter : ListAdapter<TodoModel, TodoListAdapter.TodoViewHolder>(T
         }
 
         override fun areContentsTheSame(oldItem: TodoModel, newItem: TodoModel): Boolean {
-            return oldItem.description == newItem.description
+            return oldItem.id == newItem.id
         }
     }
 }
