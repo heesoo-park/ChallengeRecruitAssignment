@@ -16,7 +16,6 @@ class BookmarkListAdapter: ListAdapter<TodoModel, BookmarkListAdapter.BookmarkVi
             binding.apply {
                 tvBookmarkItemTitle.text = todo.title
                 tvBookmarkItemDescription.text = todo.description
-                switchBookmarkItemBookmark.isChecked = todo.isBookmarked
             }
         }
     }

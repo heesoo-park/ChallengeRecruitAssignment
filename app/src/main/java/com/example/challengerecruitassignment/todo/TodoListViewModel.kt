@@ -8,44 +8,88 @@ import com.example.challengerecruitassignment.manage.ManageTodoEntryType
 
 class TodoListViewModel : ViewModel() {
 
+    private val _event: MutableLiveData<TodoListEvent> = MutableLiveData()
+    val event: LiveData<TodoListEvent> get() = _event
+
     private val _uiState: MutableLiveData<TodoListUiState> = MutableLiveData(TodoListUiState.init())
     val uiState: LiveData<TodoListUiState> get() = _uiState
 
-    fun onClick(todo: TodoModel?, entryType: ManageTodoEntryType, position: Int) {
+    fun onClickItem(
+        position: Int,
+        item: TodoListItem
+    ) {
+        _event.value = TodoListEvent.OpenContent(
+            position,
+            when (item) {
+                is TodoListItem.Item -> TodoModel(
+                    id = item.id,
+                    title = item.title,
+                    description = item.content
+                )
+            }
+        )
+    }
+
+    fun updateTodoItem(
+        entryType: ManageTodoEntryType?,
+        todo: TodoModel?
+    ) {
+        if (todo == null) {
+            return
+        }
+
+        val mutableList = uiState.value?.todoList.orEmpty().toMutableList()
+
         when (entryType) {
-            ManageTodoEntryType.CREATE -> onClickRegister(todo)
-            ManageTodoEntryType.UPDATE -> onClickUpdate(todo, position)
-            ManageTodoEntryType.DELETE -> onClickDelete(todo)
+            ManageTodoEntryType.UPDATE -> {
+                val position = mutableList.indexOfFirst {
+                    when (it) {
+                        is TodoListItem.Item -> {
+                            it.id == todo.id
+                        }
+                    }
+                }
+
+                uiState.value?.copy(
+                    todoList = mutableList.also { list ->
+                        list[position] = createTodoItem(todo)
+                    }
+                )
+            }
+
+            ManageTodoEntryType.CREATE -> {
+                uiState.value?.copy(
+                    todoList = mutableList.apply {
+                        add(createTodoItem(todo))
+                    }
+                )
+            }
+
+            ManageTodoEntryType.DELETE -> {
+                val position = mutableList.indexOfFirst {
+                    when (it) {
+                        is TodoListItem.Item -> {
+                            it.id == todo.id
+                        }
+                    }
+                }
+
+                uiState.value?.copy(
+                    todoList = mutableList.apply {
+                        removeAt(position)
+                    }
+                )
+            }
+
+            else -> null
+        }?.let { state ->
+            _uiState.value = state
         }
     }
 
-    private fun onClickRegister(todo: TodoModel?) {
-        if (todo == null) return
-
-        _uiState.value = uiState.value?.copy(
-            todoList = uiState.value?.todoList.orEmpty().toMutableList().apply {
-                add(todo)
-            }
-        )
-    }
-
-    private fun onClickUpdate(todo: TodoModel?, position: Int) {
-        if (todo == null) return
-
-        _uiState.value = _uiState.value?.copy(
-            todoList = uiState.value?.todoList.orEmpty().toMutableList().apply {
-                set(position, todo)
-            }
-        )
-    }
-
-    private fun onClickDelete(todo: TodoModel?) {
-        if (todo == null) return
-
-        _uiState.value = _uiState.value?.copy(
-            todoList = uiState.value?.todoList.orEmpty().toMutableList().apply {
-                removeIf { it == todo }
-            }
-        )
-    }
+    private fun createTodoItem(model: TodoModel): TodoListItem = TodoListItem.Item(
+        id = model.id,
+        title = model.title,
+        content = model.description
+    )
 }

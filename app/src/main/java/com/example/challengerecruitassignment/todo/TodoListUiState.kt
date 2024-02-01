@@ -1,9 +1,7 @@
 package com.example.challengerecruitassignment.todo
 
-import com.example.challengerecruitassignment.TodoModel
-
 data class TodoListUiState(
-    val todoList: List<TodoModel>
+    val todoList: List<TodoListItem>
 ) {
     companion object {
         fun init() = TodoListUiState(

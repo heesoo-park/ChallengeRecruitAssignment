@@ -1,20 +1,22 @@
 package com.example.challengerecruitassignment.todo
 
 import android.app.Activity.RESULT_OK
-import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.IntentCompat
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.challengerecruitassignment.manage.ManageTodoActivity
 import com.example.challengerecruitassignment.TodoModel
 import com.example.challengerecruitassignment.databinding.FragmentTodoBinding
+import com.example.challengerecruitassignment.manage.ManageTodoConstant.EXTRA_TODO_ENTRY_TYPE
+import com.example.challengerecruitassignment.manage.ManageTodoConstant.EXTRA_TODO_MODEL
 import com.example.challengerecruitassignment.manage.ManageTodoEntryType
 
 class TodoListFragment : Fragment() {
@@ -23,7 +25,26 @@ class TodoListFragment : Fragment() {
         fun newInstance() = TodoListFragment()
     }
 
-    private lateinit var resultLauncher: ActivityResultLauncher<Intent>
+    private val updateTodoLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == RESULT_OK) {
+                val todo = IntentCompat.getParcelableExtra(
+                    result.data ?: Intent(),
+                    EXTRA_TODO_MODEL,
+                    TodoModel::class.java
+                )
+                val entryType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    result.data?.getSerializableExtra(
+                        EXTRA_TODO_ENTRY_TYPE,
+                        ManageTodoEntryType::class.java
+                    )
+                } else {
+                    result.data?.getSerializableExtra(EXTRA_TODO_ENTRY_TYPE) as ManageTodoEntryType
+                }
+
+                viewModel.updateTodoItem(entryType, todo)
+            }
+        }
 
     private var _binding: FragmentTodoBinding? = null
     private val binding get() = _binding!!
@@ -32,27 +53,15 @@ class TodoListFragment : Fragment() {
         ViewModelProvider(this@TodoListFragment)[TodoListViewModel::class.java]
     }
 
-    private val adapter = TodoListAdapter()
+    private val adapter: TodoListAdapter by lazy {
+        TodoListAdapter(
+            onClickItem = { position, item ->
+                viewModel.onClickItem(position, item)
+            },
+            onBookmarkChecked = { position, item ->
 
-    override fun onAttach(context: Context) {
-        super.onAttach(context)
-        resultLauncher =
-            registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-                if (result.resultCode == RESULT_OK) {
-                    val todo = result?.data?.getParcelableExtra(
-                        ManageTodoActivity.EXTRA_TODO_MODEL,
-                        TodoModel::class.java
-                    )
-                    val entryType = ManageTodoEntryType.getEntryType(
-                        result?.data?.getIntExtra(
-                            ManageTodoActivity.EXTRA_ENTRY_TYPE,
-                            ManageTodoEntryType.CREATE.ordinal
-                        )
-                    )
-                    val position = result?.data?.getIntExtra("position", 0)
-                    viewModel.onClick(todo, entryType, position ?: 0)
-                }
             }
+        )
     }
 
     override fun onCreateView(
@@ -75,16 +84,8 @@ class TodoListFragment : Fragment() {
         rvTodo.layoutManager =
             LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false)
 
-        adapter.todoClick = object : TodoListAdapter.TodoClick {
-            override fun onClick(todo: TodoModel, position: Int) {
-                resultLauncher.launch(
-                    ManageTodoActivity.newIntentForUpdate(requireContext(), todo, position)
-                )
-            }
-        }
-
         fabTodoAdd.setOnClickListener {
-            resultLauncher.launch(
+            updateTodoLauncher.launch(
                 ManageTodoActivity.newIntentForCreate(requireContext())
             )
         }
@@ -93,6 +94,20 @@ class TodoListFragment : Fragment() {
     private fun initViewModel() = with(viewModel) {
         uiState.observe(viewLifecycleOwner) {
             adapter.submitList(it.todoList.toList())
+        }
+
+        event.observe(viewLifecycleOwner) {
+            when (it) {
+                is TodoListEvent.OpenContent -> {
+                    updateTodoLauncher.launch(
+                        ManageTodoActivity.newIntentForUpdate(
+                            requireContext(),
+                            it.item,
+                            it.position
+                        )
+                    )
+                }
+            }
         }
     }
 

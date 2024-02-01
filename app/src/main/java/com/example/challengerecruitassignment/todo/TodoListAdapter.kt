@@ -1,61 +1,83 @@
 package com.example.challengerecruitassignment.todo
 
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.example.challengerecruitassignment.TodoModel
 import com.example.challengerecruitassignment.databinding.TodoItemBinding
+import com.example.challengerecruitassignment.databinding.UnknownItemBinding
 
-class TodoListAdapter : ListAdapter<TodoModel, TodoListAdapter.TodoViewHolder>(TodoComparator()) {
-
-    interface TodoClick {
-        fun onClick(todo: TodoModel, position: Int)
-    }
-
-    var todoClick: TodoClick? = null
-
-    inner class TodoViewHolder(private val binding: TodoItemBinding) :
-        RecyclerView.ViewHolder(binding.root) {
-
-        fun bind(todo: TodoModel) {
-            binding.apply {
-                tvTodoItemTitle.text = todo.title
-                tvTodoItemDescription.text = todo.description
-                switchTodoItemBookmark.isChecked = todo.isBookmarked
-            }
+class TodoListAdapter(
+    private val onClickItem: (Int, TodoListItem) -> Unit,
+    private val onBookmarkChecked: (Int, TodoListItem) -> Unit
+) : ListAdapter<TodoListItem, TodoListAdapter.TodoViewHolder>(
+    object : DiffUtil.ItemCallback<TodoListItem>() {
+    override fun areItemsTheSame(oldItem: TodoListItem, newItem: TodoListItem): Boolean =
+        if (oldItem is TodoListItem.Item && newItem is TodoListItem.Item) {
+            oldItem.id == newItem.id
+        } else {
+            oldItem == newItem
         }
 
-        fun connectInterface(position: Int) {
-            binding.constraintLayoutTodoItem.setOnClickListener {
-                todoClick?.onClick(currentList[position], position)
-            }
-        }
+    override fun areContentsTheSame(oldItem: TodoListItem, newItem: TodoListItem): Boolean =
+        oldItem == newItem
+}) {
+
+    abstract class TodoViewHolder(view: View): RecyclerView.ViewHolder(view) {
+
+        abstract fun onBind(item: TodoListItem)
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TodoViewHolder {
-        return TodoViewHolder(
-            TodoItemBinding.inflate(
-                LayoutInflater.from(parent.context),
-                parent,
-                false
-            )
+    override fun getItemViewType(position: Int): Int = when (getItem(position)) {
+        is TodoListItem.Item -> TodoListViewType.ITEM
+        else -> TodoListViewType.UNKNOWN
+    }.ordinal
+
+    override fun onCreateViewHolder(
+        parent: ViewGroup,
+        viewType: Int
+    ): TodoViewHolder = when (TodoListViewType.from(viewType)) {
+        TodoListViewType.ITEM -> TodoItemViewHolder(
+            TodoItemBinding.inflate(LayoutInflater.from(parent.context), parent, false),
+            onClickItem,
+            onBookmarkChecked
+        )
+
+        else -> TodoUnknownViewHolder(
+            UnknownItemBinding.inflate(LayoutInflater.from(parent.context), parent, false),
         )
     }
 
     override fun onBindViewHolder(holder: TodoViewHolder, position: Int) {
-        holder.bind(currentList[position])
-        holder.connectInterface(position)
+        holder.onBind(getItem(position))
     }
 
-    class TodoComparator : DiffUtil.ItemCallback<TodoModel>() {
-        override fun areItemsTheSame(oldItem: TodoModel, newItem: TodoModel): Boolean {
-            return oldItem == newItem
-        }
+    class TodoItemViewHolder(
+        private val binding: TodoItemBinding,
+        private val onClickItem: (Int, TodoListItem) -> Unit,
+        private val onBookmarkChecked: (Int, TodoListItem) -> Unit
+    ) : TodoViewHolder(binding.root) {
 
-        override fun areContentsTheSame(oldItem: TodoModel, newItem: TodoModel): Boolean {
-            return oldItem.id == newItem.id
+        override fun onBind(item: TodoListItem) {
+            if (item is TodoListItem.Item) {
+                binding.tvTodoItemTitle.text = item.title
+                binding.tvTodoItemDescription.text = item.content
+                binding.constraintLayoutTodoItem.setOnClickListener {
+                    onClickItem.invoke(
+                        adapterPosition,
+                        item,
+                    )
+                }
+            }
         }
+    }
+
+    class TodoUnknownViewHolder(
+        private val binding: UnknownItemBinding,
+    ) : TodoViewHolder(binding.root) {
+
+        override fun onBind(item: TodoListItem) = Unit
     }
 }

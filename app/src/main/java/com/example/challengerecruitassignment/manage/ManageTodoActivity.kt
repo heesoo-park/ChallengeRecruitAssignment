@@ -2,21 +2,20 @@ package com.example.challengerecruitassignment.manage
 
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.view.View
+import androidx.activity.viewModels
+import androidx.core.view.isVisible
 import androidx.core.widget.addTextChangedListener
 import com.example.challengerecruitassignment.TodoModel
 import com.example.challengerecruitassignment.databinding.ActivityManageTodoBinding
-import java.util.UUID
+import com.example.challengerecruitassignment.manage.ManageTodoConstant.EXTRA_TODO_ENTRY_TYPE
+import com.example.challengerecruitassignment.manage.ManageTodoConstant.EXTRA_TODO_MODEL
+import com.example.challengerecruitassignment.manage.ManageTodoConstant.EXTRA_TODO_POSITION
 
 class ManageTodoActivity : AppCompatActivity() {
 
     companion object {
-        const val EXTRA_ENTRY_TYPE = "extra_entry_type"
-        const val EXTRA_TODO_MODEL = "extra_todo_model"
-        const val EXTRA_TODO_POSITION = "extra_todo_position"
 
         fun newIntentForCreate(
             context: Context,
@@ -24,7 +23,7 @@ class ManageTodoActivity : AppCompatActivity() {
             context,
             ManageTodoActivity::class.java
         ).apply {
-            putExtra(EXTRA_ENTRY_TYPE, ManageTodoEntryType.CREATE)
+            putExtra(EXTRA_TODO_ENTRY_TYPE, ManageTodoEntryType.CREATE)
         }
 
         fun newIntentForUpdate(
@@ -35,35 +34,22 @@ class ManageTodoActivity : AppCompatActivity() {
             context,
             ManageTodoActivity::class.java
         ).apply {
-            putExtra(EXTRA_ENTRY_TYPE, ManageTodoEntryType.UPDATE.ordinal)
+            putExtra(EXTRA_TODO_ENTRY_TYPE, ManageTodoEntryType.UPDATE)
             putExtra(EXTRA_TODO_MODEL, todo)
             putExtra(EXTRA_TODO_POSITION, position)
         }
     }
 
-    private val binding: ActivityManageTodoBinding by lazy {
-        ActivityManageTodoBinding.inflate(layoutInflater)
-    }
-
-    private val entryType: ManageTodoEntryType by lazy {
-        ManageTodoEntryType.getEntryType(
-            intent?.getIntExtra(
-                EXTRA_ENTRY_TYPE,
-                ManageTodoEntryType.CREATE.ordinal
-            )
+    private val viewModel: ManageTodoViewModel by viewModels {
+        ManageTodoSavedStateViewModelFatory(
+            ManageTodoViewModelFactory(),
+            this,
+            intent.extras
         )
     }
 
-    private val todo: TodoModel? by lazy {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            intent.getParcelableExtra(EXTRA_TODO_MODEL, TodoModel::class.java)
-        } else {
-            intent.getParcelableExtra(EXTRA_TODO_MODEL)
-        }
-    }
-
-    private val position: Int? by lazy {
-        intent.getIntExtra(EXTRA_TODO_POSITION, 0)
+    private val binding: ActivityManageTodoBinding by lazy {
+        ActivityManageTodoBinding.inflate(layoutInflater)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -71,70 +57,105 @@ class ManageTodoActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         initView()
+        initViewModel()
     }
 
     private fun initView() = with(binding) {
-        etRegisterTodoTitle.setText(todo?.title)
-        etRegisterTodoDescription.setText(todo?.description)
-
-        if (entryType == ManageTodoEntryType.UPDATE) {
-            btnRegisterTodoRegister.visibility = View.GONE
-            btnRegisterTodoDelete.visibility = View.VISIBLE
-            btnRegisterTodoUpdate.visibility = View.VISIBLE
-        }
-
         tbRegisterTodo.setNavigationOnClickListener {
             finish()
         }
 
         btnRegisterTodoRegister.setOnClickListener {
-            val newIntent = Intent()
-            newIntent.putExtra(
-                EXTRA_TODO_MODEL,
-                TodoModel(
-                    UUID.randomUUID().toString(),
-                    etRegisterTodoTitle.text.toString(),
-                    etRegisterTodoDescription.text.toString()
-                )
+            viewModel.onClickRegister(
+                etRegisterTodoTitle.text.toString(),
+                etRegisterTodoDescription.text.toString()
             )
-            newIntent.putExtra(EXTRA_ENTRY_TYPE, entryType.ordinal)
-            setResult(RESULT_OK, newIntent)
-            finish()
         }
 
         btnRegisterTodoUpdate.setOnClickListener {
-            val newIntent = Intent()
-            newIntent.putExtra(
-                EXTRA_TODO_MODEL,
-                TodoModel(
-                    UUID.randomUUID().toString(),
-                    etRegisterTodoTitle.text.toString(),
-                    etRegisterTodoDescription.text.toString()
-                )
+            viewModel.onClickUpdate(
+                etRegisterTodoTitle.text.toString(),
+                etRegisterTodoDescription.text.toString()
             )
-            newIntent.putExtra(EXTRA_ENTRY_TYPE, entryType.ordinal)
-            newIntent.putExtra(EXTRA_TODO_POSITION, position)
-            setResult(RESULT_OK, newIntent)
-            finish()
         }
 
         btnRegisterTodoDelete.setOnClickListener {
-            val newIntent = Intent()
-            newIntent.putExtra(
-                EXTRA_TODO_MODEL,
-                TodoModel(
-                    todo?.id.toString(),
-                    todo?.title.toString(),
-                    todo?.description.toString()
-                )
-            )
-            newIntent.putExtra(EXTRA_ENTRY_TYPE, ManageTodoEntryType.DELETE.ordinal)
-            setResult(RESULT_OK, newIntent)
-            finish()
+            viewModel.onClickDelete()
         }
 
         etRegisterTodoTitle.addTextChangedListener {
             btnRegisterTodoRegister.isEnabled = etRegisterTodoTitle.text.isNotEmpty()
+        }
+    }
+
+    private fun initViewModel() = with(viewModel) {
+        uiState.observe(this@ManageTodoActivity) {
+            with(binding) {
+                etRegisterTodoTitle.setText(it.title)
+                etRegisterTodoDescription.setText(it.content)
+
+                when (it.button) {
+                    ManageTodoButtonUiState.Create -> {
+                        btnRegisterTodoRegister.isVisible = true
+                    }
+
+                    ManageTodoButtonUiState.Update -> {
+                        btnRegisterTodoDelete.isVisible = true
+                        btnRegisterTodoUpdate.isVisible = true
+                    }
+
+                    else -> Unit
+                }
+            }
+        }
+
+        event.observe(this@ManageTodoActivity) {
+            when (it) {
+                is ManageTodoEvent.Update -> {
+                    setResult(RESULT_OK, Intent().apply {
+                        putExtra(
+                            EXTRA_TODO_MODEL,
+                            TodoModel(
+                                id = it.id,
+                                title = it.title,
+                                description = it.content
+                            )
+                        )
+                        putExtra(EXTRA_TODO_ENTRY_TYPE, ManageTodoEntryType.UPDATE)
+                    })
+                    finish()
+                }
+
+                is ManageTodoEvent.Register -> {
+                    setResult(RESULT_OK, Intent().apply {
+                        putExtra(
+                            EXTRA_TODO_MODEL,
+                            TodoModel(
+                                id = it.id,
+                                title = it.title,
+                                description = it.content
+                            )
+                        )
+                        putExtra(EXTRA_TODO_ENTRY_TYPE, ManageTodoEntryType.CREATE)
+                    })
+                    finish()
+                }
+
+                is ManageTodoEvent.Delete -> {
+                    setResult(RESULT_OK, Intent().apply {
+                        putExtra(
+                            EXTRA_TODO_MODEL,
+                            TodoModel(
+                                id = it.id,
+                                title = it.title,
+                                description = it.content
+                            )
+                        )
+                        putExtra(EXTRA_TODO_ENTRY_TYPE, ManageTodoEntryType.DELETE)
+                    })
+                    finish()
+                }
+            }
         }
     }
 }
