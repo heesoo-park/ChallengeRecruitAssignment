@@ -7,7 +7,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.savedstate.SavedStateRegistryOwner
-import com.example.challengerecruitassignment.TodoModel
+import com.example.challengerecruitassignment.main.TodoModel
 import com.example.challengerecruitassignment.manage.ManageTodoConstant.EXTRA_TODO_ENTRY_TYPE
 import com.example.challengerecruitassignment.manage.ManageTodoConstant.EXTRA_TODO_MODEL
 import java.util.UUID
@@ -68,7 +68,7 @@ class ManageTodoViewModel(
     }
 }
 
-class ManageTodoViewModelFactory() {
+class ManageTodoViewModelFactory {
 
     fun create(
         savedStateHandle: SavedStateHandle
@@ -77,7 +77,7 @@ class ManageTodoViewModelFactory() {
     )
 }
 
-class ManageTodoSavedStateViewModelFatory(
+class ManageTodoSavedStateViewModelFactory(
     private val factory: ManageTodoViewModelFactory,
     owner: SavedStateRegistryOwner,
     defaultArgs: Bundle? = null

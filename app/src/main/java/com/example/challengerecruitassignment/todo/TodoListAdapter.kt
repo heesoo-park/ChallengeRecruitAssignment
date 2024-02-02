@@ -11,21 +11,21 @@ import com.example.challengerecruitassignment.databinding.UnknownItemBinding
 
 class TodoListAdapter(
     private val onClickItem: (Int, TodoListItem) -> Unit,
-    private val onBookmarkChecked: (Int, TodoListItem) -> Unit
+    private val onBookmarkChecked: (TodoListItem) -> Unit
 ) : ListAdapter<TodoListItem, TodoListAdapter.TodoViewHolder>(
     object : DiffUtil.ItemCallback<TodoListItem>() {
-    override fun areItemsTheSame(oldItem: TodoListItem, newItem: TodoListItem): Boolean =
-        if (oldItem is TodoListItem.Item && newItem is TodoListItem.Item) {
-            oldItem.id == newItem.id
-        } else {
+        override fun areItemsTheSame(oldItem: TodoListItem, newItem: TodoListItem): Boolean =
+            if (oldItem is TodoListItem.Item && newItem is TodoListItem.Item) {
+                oldItem.id == newItem.id
+            } else {
+                oldItem == newItem
+            }
+
+        override fun areContentsTheSame(oldItem: TodoListItem, newItem: TodoListItem): Boolean =
             oldItem == newItem
-        }
+    }) {
 
-    override fun areContentsTheSame(oldItem: TodoListItem, newItem: TodoListItem): Boolean =
-        oldItem == newItem
-}) {
-
-    abstract class TodoViewHolder(view: View): RecyclerView.ViewHolder(view) {
+    abstract class TodoViewHolder(view: View) : RecyclerView.ViewHolder(view) {
 
         abstract fun onBind(item: TodoListItem)
     }
@@ -57,17 +57,23 @@ class TodoListAdapter(
     class TodoItemViewHolder(
         private val binding: TodoItemBinding,
         private val onClickItem: (Int, TodoListItem) -> Unit,
-        private val onBookmarkChecked: (Int, TodoListItem) -> Unit
+        private val onBookmarkChecked: (TodoListItem) -> Unit
     ) : TodoViewHolder(binding.root) {
 
-        override fun onBind(item: TodoListItem) {
+        override fun onBind(item: TodoListItem) = with(binding) {
             if (item is TodoListItem.Item) {
-                binding.tvTodoItemTitle.text = item.title
-                binding.tvTodoItemDescription.text = item.content
-                binding.constraintLayoutTodoItem.setOnClickListener {
+                tvTodoItemTitle.text = item.title
+                tvTodoItemDescription.text = item.content
+                switchTodoItemBookmark.isChecked = item.isBookmarked ?: false
+                constraintLayoutTodoItem.setOnClickListener {
                     onClickItem.invoke(
                         adapterPosition,
                         item,
+                    )
+                }
+                switchTodoItemBookmark.setOnClickListener {
+                    onBookmarkChecked.invoke(
+                        item
                     )
                 }
             }

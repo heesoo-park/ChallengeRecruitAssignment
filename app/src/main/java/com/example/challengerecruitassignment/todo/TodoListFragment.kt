@@ -10,11 +10,14 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.IntentCompat
-import androidx.lifecycle.ViewModelProvider
+import androidx.fragment.app.activityViewModels
+import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.challengerecruitassignment.manage.ManageTodoActivity
-import com.example.challengerecruitassignment.TodoModel
+import com.example.challengerecruitassignment.main.TodoModel
 import com.example.challengerecruitassignment.databinding.FragmentTodoBinding
+import com.example.challengerecruitassignment.main.SharedEvent
+import com.example.challengerecruitassignment.main.SharedViewModel
 import com.example.challengerecruitassignment.manage.ManageTodoConstant.EXTRA_TODO_ENTRY_TYPE
 import com.example.challengerecruitassignment.manage.ManageTodoConstant.EXTRA_TODO_MODEL
 import com.example.challengerecruitassignment.manage.ManageTodoEntryType
@@ -42,24 +45,23 @@ class TodoListFragment : Fragment() {
                     result.data?.getSerializableExtra(EXTRA_TODO_ENTRY_TYPE) as ManageTodoEntryType
                 }
 
-                viewModel.updateTodoItem(entryType, todo)
+                viewModel.updateItem(entryType, todo)
             }
         }
 
     private var _binding: FragmentTodoBinding? = null
     private val binding get() = _binding!!
 
-    private val viewModel by lazy {
-        ViewModelProvider(this@TodoListFragment)[TodoListViewModel::class.java]
-    }
+    private val sharedViewModel: SharedViewModel by activityViewModels()
+    private val viewModel: TodoListViewModel by viewModels()
 
     private val adapter: TodoListAdapter by lazy {
         TodoListAdapter(
             onClickItem = { position, item ->
                 viewModel.onClickItem(position, item)
             },
-            onBookmarkChecked = { position, item ->
-
+            onBookmarkChecked = { item ->
+                viewModel.onCheckBookmark(item)
             }
         )
     }
@@ -77,6 +79,7 @@ class TodoListFragment : Fragment() {
 
         initView()
         initViewModel()
+        initSharedViewModel()
     }
 
     private fun initView() = with(binding) {
@@ -107,6 +110,22 @@ class TodoListFragment : Fragment() {
                         )
                     )
                 }
+
+                is TodoListEvent.SendContent -> {
+                    sharedViewModel.sendTodoItem(it.item)
+                }
+            }
+        }
+    }
+
+    private fun initSharedViewModel() = with(sharedViewModel) {
+        sharedEvent.observe(viewLifecycleOwner) {
+            when (it) {
+                is SharedEvent.SendToTodo -> {
+                    viewModel.updateItem(it.entryType, it.item)
+                }
+
+                else -> Unit
             }
         }
     }

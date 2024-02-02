@@ -3,8 +3,9 @@ package com.example.challengerecruitassignment.todo
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import com.example.challengerecruitassignment.TodoModel
+import com.example.challengerecruitassignment.main.TodoModel
 import com.example.challengerecruitassignment.manage.ManageTodoEntryType
+
 
 class TodoListViewModel : ViewModel() {
 
@@ -30,29 +31,127 @@ class TodoListViewModel : ViewModel() {
         )
     }
 
-    fun updateTodoItem(
-        entryType: ManageTodoEntryType?,
-        todo: TodoModel?
+    fun onCheckBookmark(
+        item: TodoListItem
     ) {
-        if (todo == null) {
+        when (item) {
+            is TodoListItem.Item -> {
+                val temp = item.copy(
+                    isBookmarked = item.isBookmarked?.not()
+                )
+
+                val mutableList = uiState.value?.todoList.orEmpty().toMutableList()
+                val position = mutableList.indexOfFirst {
+                    when (it) {
+                        is TodoListItem.Item -> {
+                            it.id == temp.id
+                        }
+                    }
+                }
+
+                _uiState.value = uiState.value?.copy(
+                    todoList = mutableList.also {
+                        it[position] = temp
+                    }
+                )
+
+                _event.value = TodoListEvent.SendContent(temp)
+            }
+        }
+    }
+
+    // BookmarkList 프래그먼트에서 넘어온 값을 업데이트 시킬 때 사용하는 함수
+    fun updateItem(
+        entryType: ManageTodoEntryType?,
+        item: TodoListItem?
+    ) {
+        if (item == null) {
             return
         }
 
         val mutableList = uiState.value?.todoList.orEmpty().toMutableList()
 
-        when (entryType) {
-            ManageTodoEntryType.UPDATE -> {
-                val position = mutableList.indexOfFirst {
-                    when (it) {
-                        is TodoListItem.Item -> {
-                            it.id == todo.id
+        when (item) {
+            is TodoListItem.Item -> {
+                val position =
+                    mutableList.indexOfFirst {
+                        when (it) {
+                            is TodoListItem.Item -> {
+                                it.id == item.id
+                            }
                         }
                     }
+
+                when (entryType) {
+                    ManageTodoEntryType.UPDATE -> {
+                        uiState.value?.copy(
+                            todoList = mutableList.also { list ->
+                                list[position] = item
+                            }
+                        )
+                    }
+
+                    ManageTodoEntryType.DELETE -> {
+                        uiState.value?.copy(
+                            todoList = mutableList.apply {
+                                removeAt(position)
+                            }
+                        )
+                    }
+
+                    else -> null
                 }
+            }
+        }?.let { state ->
+            _uiState.value = state
+        }
+    }
+
+    // ManageTodo 액티비티에서 넘어온 값을 업데이트 시킬 때 사용하는 함수
+    fun updateItem(
+        entryType: ManageTodoEntryType?,
+        item: TodoModel?
+    ) {
+        if (item == null) {
+            return
+        }
+
+        val mutableList = uiState.value?.todoList.orEmpty().toMutableList()
+
+        val position = mutableList.indexOfFirst {
+            when (it) {
+                is TodoListItem.Item -> {
+                    it.id == item.id
+                }
+            }
+        }
+
+        val target = mutableList.find {
+            when (it) {
+                is TodoListItem.Item -> {
+                    it.id == item.id
+                }
+            }
+        }
+
+        when (entryType) {
+            ManageTodoEntryType.UPDATE -> {
+                val temp = when (target) {
+                    is TodoListItem.Item -> {
+                        target.copy(
+                            title = item.title,
+                            content = item.description
+                        )
+                    }
+
+                    else -> null
+                } as TodoListItem
+
+                _event.value = TodoListEvent.SendContent(temp)
 
                 uiState.value?.copy(
                     todoList = mutableList.also { list ->
-                        list[position] = createTodoItem(todo)
+                        list[position] = temp
                     }
                 )
             }
@@ -60,19 +159,25 @@ class TodoListViewModel : ViewModel() {
             ManageTodoEntryType.CREATE -> {
                 uiState.value?.copy(
                     todoList = mutableList.apply {
-                        add(createTodoItem(todo))
+                        add(createTodoItem(item))
                     }
                 )
             }
 
             ManageTodoEntryType.DELETE -> {
-                val position = mutableList.indexOfFirst {
-                    when (it) {
-                        is TodoListItem.Item -> {
-                            it.id == todo.id
-                        }
+                val temp = when (target) {
+                    is TodoListItem.Item -> {
+                        target.copy(
+                            title = item.title,
+                            content = item.description,
+                            isBookmarked = target.isBookmarked?.not()
+                        )
                     }
-                }
+
+                    else -> null
+                } as TodoListItem
+
+                _event.value = TodoListEvent.SendContent(temp)
 
                 uiState.value?.copy(
                     todoList = mutableList.apply {

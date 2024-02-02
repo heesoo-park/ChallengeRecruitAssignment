@@ -1,4 +1,4 @@
-package com.example.challengerecruitassignment
+package com.example.challengerecruitassignment.main
 
 import android.os.Parcelable
 import kotlinx.parcelize.Parcelize

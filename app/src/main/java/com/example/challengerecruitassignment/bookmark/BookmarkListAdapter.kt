@@ -5,17 +5,54 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.example.challengerecruitassignment.TodoModel
 import com.example.challengerecruitassignment.databinding.BookmarkItemBinding
 
-class BookmarkListAdapter: ListAdapter<TodoModel, BookmarkListAdapter.BookmarkViewHolder>(BookmarkComparator()) {
+class BookmarkListAdapter(
+    private val onClickItem: (Int, BookmarkListItem) -> Unit,
+    private val onBookmarkChecked: (BookmarkListItem) -> Unit
+) : ListAdapter<BookmarkListItem, BookmarkListAdapter.BookmarkViewHolder>(
+    object : DiffUtil.ItemCallback<BookmarkListItem>() {
+        override fun areItemsTheSame(
+            oldItem: BookmarkListItem,
+            newItem: BookmarkListItem
+        ): Boolean =
+            if (oldItem is BookmarkListItem.Item && newItem is BookmarkListItem.Item) {
+                oldItem.id == newItem.id
+            } else {
+                oldItem == newItem
+            }
 
-    inner class BookmarkViewHolder(private val binding: BookmarkItemBinding) :
-        RecyclerView.ViewHolder(binding.root) {
-        fun bind(todo: TodoModel) {
-            binding.apply {
-                tvBookmarkItemTitle.text = todo.title
-                tvBookmarkItemDescription.text = todo.description
+        override fun areContentsTheSame(
+            oldItem: BookmarkListItem,
+            newItem: BookmarkListItem
+        ): Boolean =
+            oldItem == newItem
+    }
+) {
+
+    class BookmarkViewHolder(
+        private val binding: BookmarkItemBinding,
+        private val onClickItem: (Int, BookmarkListItem) -> Unit,
+        private val onBookmarkChecked: (BookmarkListItem) -> Unit
+    ) : RecyclerView.ViewHolder(binding.root) {
+        fun bind(todo: BookmarkListItem) {
+            if (todo is BookmarkListItem.Item) {
+                binding.apply {
+                    tvBookmarkItemTitle.text = todo.title
+                    tvBookmarkItemDescription.text = todo.content
+                    switchBookmarkItemBookmark.isChecked = todo.isBookmarked ?: false
+                    constraintLayoutBookmarkItem.setOnClickListener {
+                        onClickItem.invoke(
+                            adapterPosition,
+                            todo
+                        )
+                    }
+                    switchBookmarkItemBookmark.setOnClickListener {
+                        onBookmarkChecked.invoke(
+                            todo
+                        )
+                    }
+                }
             }
         }
     }
@@ -26,21 +63,13 @@ class BookmarkListAdapter: ListAdapter<TodoModel, BookmarkListAdapter.BookmarkVi
                 LayoutInflater.from(parent.context),
                 parent,
                 false
-            )
+            ),
+            onClickItem,
+            onBookmarkChecked
         )
     }
 
     override fun onBindViewHolder(holder: BookmarkViewHolder, position: Int) {
         holder.bind(currentList[position])
-    }
-
-    class BookmarkComparator: DiffUtil.ItemCallback<TodoModel>() {
-        override fun areItemsTheSame(oldItem: TodoModel, newItem: TodoModel): Boolean {
-            return oldItem == newItem
-        }
-
-        override fun areContentsTheSame(oldItem: TodoModel, newItem: TodoModel): Boolean {
-            return oldItem.title == newItem.title
-        }
     }
 }

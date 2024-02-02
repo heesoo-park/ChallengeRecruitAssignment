@@ -7,7 +7,7 @@ import android.os.Bundle
 import androidx.activity.viewModels
 import androidx.core.view.isVisible
 import androidx.core.widget.addTextChangedListener
-import com.example.challengerecruitassignment.TodoModel
+import com.example.challengerecruitassignment.main.TodoModel
 import com.example.challengerecruitassignment.databinding.ActivityManageTodoBinding
 import com.example.challengerecruitassignment.manage.ManageTodoConstant.EXTRA_TODO_ENTRY_TYPE
 import com.example.challengerecruitassignment.manage.ManageTodoConstant.EXTRA_TODO_MODEL
@@ -41,7 +41,7 @@ class ManageTodoActivity : AppCompatActivity() {
     }
 
     private val viewModel: ManageTodoViewModel by viewModels {
-        ManageTodoSavedStateViewModelFatory(
+        ManageTodoSavedStateViewModelFactory(
             ManageTodoViewModelFactory(),
             this,
             intent.extras
